@@ -18,7 +18,7 @@ work_nodes = []
 try:
 	nodef = open(os.environ['PBS_NODEFILE'])
 except KeyError:
-	print >> sys.stderr, 'Error opening PBS_NODEFILE. Exiting.'
+	print('Error opening PBS_NODEFILE. Exiting.')
 	sys.exit()
 for line in nodef:
 	node = line.strip()
@@ -30,13 +30,13 @@ def wait(taskinfo):
 	"""Wait on a process to finish and report on it's exit."""
 	pid, status = os.wait()
 	signal = status & 0xFF
-	exit = status >> 8
+	exitstatus = status >> 8
 	node = taskinfo[pid]['node']
 	if exit != 0:
-		print >> sys.stderr, "'%s' exit status: %d" % (taskinfo[pid]['task'], exit)
+		print("'{0}' exit status: {1}".format(taskinfo[pid]['task'], exitstatus))
 		failed_tasks.append( taskinfo[pid]['task'].replace('ssh '+node+' bash -c "','')[:-1] )
 		if signal != 0:
-			print >> sys.stderr, "'%s' killed by signal: %d" % (taskinfo[pid]['task'], signal)
+			print("'{0}' killed by signal: {1}".format(taskinfo[pid]['task'], signal))
 	del taskinfo[pid]
 	return node
 
@@ -64,7 +64,7 @@ def run_tasks(tasklist):
 
 if __name__ == '__main__':
 	if len(sys.argv) != 2:
-		print >> sys.stderr, 'Usage: %s <taskfile>' % sys.argv[0]
+		print('Usage: {0} <taskfile>'.format(sys.argv[0]))
 		sys.exit()
 	taskfile = sys.argv[1]
 
@@ -73,15 +73,15 @@ if __name__ == '__main__':
 	failed_tasks = run_tasks(open(taskfile).readlines())
 	# Deal with failed ssh sessions
 	if len(failed_tasks):
-		print failed_tasks
-		print 'Re-running %d failed task(s)'%len(failed_tasks)
+		print(failed_tasks)
+		print('Re-running {0} failed task(s)'.format(len(failed_tasks)))
 		# Try 5 more times before giving up
 		NTry = 5
 		for iTry in range(NTry):
 			if len(failed_tasks):
-				print 'Trying again: %d/%d'%(iTry+1,NTry)
+				print('Trying again: %d/%d'%(iTry+1,NTry))
 				failed_tasks = run_tasks(failed_tasks)
 			else:
 				break
 
-	print 'Runtime: %.02f hours' % ((time.time() - timeStart) / 3600.)
+	print('Runtime: {0:.2f} hours'.format((time.time() - timeStart) / 3600.))

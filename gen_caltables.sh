@@ -8,15 +8,15 @@ PYTHONPATH=/opt/astro/pyrap-1.1.0/python:/home/mmanders/modules:$PYTHONPATH
 PATH=/opt/astro/wsclean-1.11-gcc4.8.5_cxx11/bin:$PATH:/opt/astro/aoflagger-2.7.1-gcc4.8.5_cxx11/bin
 . /opt/astro/env.sh;
 
-. /home/mmanders/scripts/gen_caltables_kronjob/gen_caltables.cfg
+. ~/calim-pipeline-phase2/gen_caltables.cfg
 
-workdir="/lustre/mmanders/hourly/BCAL"
+workdir="/lustre/calibration/current"
 
-dada=`/home/mmanders/scripts/get_BCALdada.py`
+dada=`~/calim-pipeline-phase2/get_BCALdada.py`
 
 mkdir -p $workdir
 mkdir -p $outdir
-cp /home/mmanders/scripts/gen_caltables_kronjob/gen_caltables.cfg $outdir
+cp ~/calim-pipeline-phase2/gen_caltables.cfg $outdir
 
 for band in ${spws}; do
     i=1
@@ -39,7 +39,7 @@ for band in ${spws}; do
     echo -n "mkdir -p $work_subdir;"
     echo -n "cd $work_subdir;"
     echo -n "ln -s /opt/astro/dada2ms/share/dada2ms/dada2ms.cfg.fiber dada2ms.cfg;"
-    echo -n "ln -s /home/mmanders/sources_resolved.json sources.json;"
+    echo -n "ln -s ~/calim-pipeline-phase2/sources_resolved.json sources.json;"
     if [ -s $removerfi ]; then
         echo -n "ln -s ${removerfi} sources_rfi.json;"
     fi

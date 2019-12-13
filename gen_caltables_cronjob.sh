@@ -8,4 +8,4 @@ set -e
 ./gen_caltables.sh > gen_caltables.txt
 ./write_gen_caltables_toindividualscripts.sh
 
-ipbs_taskfarm.py gen_caltables_exec.txt > /dev/null 2>&1
+./ipbs_taskfarm.py gen_caltables_exec.txt > /dev/null 2>&1
