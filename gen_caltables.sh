@@ -4,19 +4,17 @@
 set -e
 
 #PYTHONPATH=/opt/astro/pyrap-1.1.0/python:/lustre/mmanders/LWA/modules:$PYTHONPATH
-PYTHONPATH=/opt/astro/pyrap-1.1.0/python:/home/mmanders/modules:$PYTHONPATH
-PATH=/opt/astro/wsclean-1.11-gcc4.8.5_cxx11/bin:$PATH:/opt/astro/aoflagger-2.7.1-gcc4.8.5_cxx11/bin
 . /opt/astro/env.sh;
 
-. ~/calim-pipeline-phase2/gen_caltables.cfg
+. ~/code/calim-pipeline-phase2/gen_caltables.cfg
 
-workdir="/lustre/calibration/current"
+workdir="/lustre/claw/workdir"
 
-dada=`~/calim-pipeline-phase2/get_BCALdada.py`
+dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
 
 mkdir -p $workdir
 mkdir -p $outdir
-cp ~/calim-pipeline-phase2/gen_caltables.cfg $outdir
+cp ~/code/calim-pipeline-phase2/gen_caltables.cfg $outdir
 
 for band in ${spws}; do
     i=1
@@ -39,7 +37,7 @@ for band in ${spws}; do
     echo -n "mkdir -p $work_subdir;"
     echo -n "cd $work_subdir;"
     echo -n "ln -s /opt/astro/dada2ms/share/dada2ms/dada2ms.cfg.fiber dada2ms.cfg;"
-    echo -n "ln -s ~/calim-pipeline-phase2/sources_resolved.json sources.json;"
+    echo -n "ln -s ~/code/calim-pipeline-phase2/sources_resolved.json sources.json;"
     if [ -s $removerfi ]; then
         echo -n "ln -s ${removerfi} sources_rfi.json;"
     fi
@@ -59,8 +57,10 @@ for band in ${spws}; do
 
     # apply flags to MS
     if [ ! -z $antflag_dir ]; then
-        echo -n "/home/mmanders/scripts/apply_chanspecific_ant_flags.py /home/mmanders/imaging_scripts/flagfiles/baseline/antFreqFlags.npy ${ms} ${band};"
-        echo -n "/home/mmanders/scripts/apply_chanspecific_ant_flags.py /home/mmanders/imaging_scripts/flagfiles/baseline/antFreqFlagsAbs.npy ${ms} ${band};"
+## **PYTHON BINARY ISSUE?
+#        echo -n "~/code/calim-pipeline-phase2/apply_chanspecific_ant_flags.py ~/code/calim-pipeline-phase2/flagfiles/baseline/antFreqFlags.npy ${ms} ${band};"
+#        echo -n "~/code/calim-pipeline-phase2/apply_chanspecific_ant_flags.py ~/code/calim-pipeline-phase2/flagfiles/baseline/antFreqFlagsAbs.npy ${ms} ${band};"
+## **PYTHON BINARY ISSUE?
         # antenna flags
         echo -n "ms_flag_ants.sh ${ms} `cat ${antflag_dir}/all.antflags`;"
         # baseline flags
@@ -68,14 +68,14 @@ for band in ${spws}; do
         # channel flags
         echo -n "apply_sb_flags_single_band_ms2.py ${antflag_dir}/all.chanflags ${ms} ${band};"
     else # use the old 3-day run September flags
-        echo -n "apply_sb_flags_single_band_ms2.py /home/mmanders/chanflags/T1.sb.flags ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py /home/mmanders/chanflags/T2.sb.flags ${ms} ${band};"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T1.sb.flags ${ms} ${band};"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T2.sb.flags ${ms} ${band};"
         echo -n "apply_sb_flags_single_band_ms2.py /opt/astro/utils/share/ryan_flags_sb.txt ${ms} ${band};"
         echo -n "apply_sb_flags_single_band_ms2.py /opt/astro/utils/share/sb_flags.txt ${ms} ${band};"
         echo -n "apply_sb_flags_single_band_ms2.py /home/sb/chan_flags_nov24.txt ${ms} ${band};"
         echo -n "/home/sb/bin/flag_nov25.sh ${ms} < /home/sb/tflags.hiflux;"
         echo -n "apply_sb_flags_single_band_ms2.py /home/sb/diff_flags.txt ${ms} ${band};"
-        for flagfile in /home/mmanders/antflags/bad_*.ants; do
+        for flagfile in ~/code/calim-pipeline-phase2/flagfiles/antflags/bad_*.ants; do
             echo -n "ms_flag_ants.sh ${ms} `cat $flagfile`;"
         done
     fi
@@ -91,7 +91,7 @@ for band in ${spws}; do
     fi
 
     if $usettcal; then
-    	echo -n "echo vis=\"\\\\\"${ms}\"\\\\\" > ccal.py;"
+    	echo -n "echo vis=\\\"\"${ms}\"\\\" > ccal.py;"
         echo -n "echo \"flagdata(vis, uvrange='<3lambda', flagbackup=False)\" >> ccal.py;"
     	echo -n "casapy --nogui --nologger --log2term -c ccal.py;"
         
@@ -100,11 +100,11 @@ for band in ${spws}; do
         echo -n "ttcal-0.3.0 gaincal ${ms} ${tt} sources_${band}.json --beam constant --minuvw 10 --maxiter 30 --tolerance 1e-4;"
         echo -n "ttcal-0.3.0 applycal ${ms} ${tt} --corrected;"
     else
-    	echo -n "echo vis=\"\\\\\"${ms}\"\\\\\" > ccal.py;"
-    	echo -n "echo bcal=\"\\\\\"${bcal}\"\\\\\" >> ccal.py;"
-    	echo -n "echo bcalamps=\"\\\\\"${bcalamps}\"\\\\\" >> ccal.py;"
-        echo -n "echo Df0=\"\\\\\"${Df0}\"\\\\\" >> ccal.py;"
-    	echo -n "echo cmplst=\"\\\\\"${basename}.cl\"\\\\\" >> ccal.py;"
+    	echo -n "echo vis=\\\"\"${ms}\"\\\" > ccal.py;"
+    	echo -n "echo bcal=\\\"\"${bcal}\"\\\" >> ccal.py;"
+    	echo -n "echo bcalamps=\\\"\"${bcalamps}\"\\\" >> ccal.py;"
+        echo -n "echo Df0=\\\"\"${Df0}\"\\\" >> ccal.py;"
+    	echo -n "echo cmplst=\\\"\"${basename}.cl\"\\\" >> ccal.py;"
         if $stokes_cal; then
             echo -n "gen_model_ms_stokes.py ${ms} >> ccal.py;"
         else
@@ -149,7 +149,7 @@ for band in ${spws}; do
         echo -n "JULIA_PKGDIR=/opt/astro/mwe/ttcal-0.3.0/julia-packages/ julia-0.4.6 /home/mmanders/scripts/peel_restore.jl \"${ms}\";"
     fi
 
-    echo -n "/home/mmanders/imaging_scripts/flag_bad_chans.20180206.py ${ms} ${band};" 
+    echo -n "~/code/calim-pipeline-phase2/flag_bad_chans.20180206.py ${ms} ${band};" 
 
     if $zest; then
         echo -n "wsclean -tempdir /dev/shm/mmanders -pol I,V -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
@@ -163,11 +163,11 @@ for band in ${spws}; do
         fi
     fi
 
-    echo -n "rm -r ${outdir}/${ms};"
-    echo -n "rm -r ${outdir}/${bcal};"
-    echo -n "rm -r ${outdir}/${basename}*-dirty.fits;"
+    echo -n "rm -rf ${outdir}/${ms};"
+    echo -n "rm -rf ${outdir}/${bcal};"
+    echo -n "rm -rf ${outdir}/${basename}*-dirty.fits;"
 	echo -n "cp -r ${ms} ${bcal} ${basename}*-dirty.fits ${outdir};"
-	echo -n "rm -r $work_subdir;"
+	echo -n "rm -rf $work_subdir;"
 	echo
 	i=$(($i + 1))
 done

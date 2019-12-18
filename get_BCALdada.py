@@ -26,4 +26,4 @@ zenindarr = np.where( (np.abs(lstarr-CygARA) < 13./3600.) & (np.abs(jdnow-jdarr)
 zenind    = zenindarr[0][np.where( (np.abs(lstarr[zenindarr]-CygARA)+np.abs(jdnow-jdarr[zenindarr])) == np.min(np.abs(lstarr[zenindarr]-CygARA)+np.abs(jdnow-jdarr[zenindarr])) )]
 BCALdadafile = dadafilearray[zenind][0]
 
-print BCALdadafile
+print(BCALdadafile)
