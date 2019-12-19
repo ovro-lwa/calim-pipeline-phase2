@@ -1,17 +1,17 @@
-#!/bin/bash
-# copied from /pipedata/workdir/sb/best_as_of_Nov19/tt_ppipe2.sh
+#!/usr/bin/env bash
 
 set -e
 
-#PYTHONPATH=/opt/astro/pyrap-1.1.0/python:/lustre/mmanders/LWA/modules:$PYTHONPATH
-. /opt/astro/env.sh;
+# set up environment
+source /opt/astro/env.sh
+source ~/code/calim-pipeline-phase2/env_pipeline.sh
+source ~/code/calim-pipeline-phase2/gen_caltables.cfg
 
-. ~/code/calim-pipeline-phase2/gen_caltables.cfg
-
+# set up paths
 workdir="/lustre/claw/workdir"
-
 dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
 
+# set up dirs/files
 mkdir -p $workdir
 mkdir -p $outdir
 cp ~/code/calim-pipeline-phase2/gen_caltables.cfg $outdir
@@ -48,10 +48,12 @@ for band in ${spws}; do
     if $do_pol_swap; then
         echo -n "swap_polarizations_from_delay_bug ${ms};"
     fi
+
     # Swap lines
     if $exp_line_swap; then
         echo -n "/home/mmanders/scripts/swap_polarizations_expansion_201708/swap_polarizations_expansion ${ms};"
     fi
+
     # Antenna line swap
     #echo -n "/home/mmanders/scripts/antenna_line_swap.py ${ms};"
 
@@ -70,11 +72,11 @@ for band in ${spws}; do
     else # use the old 3-day run September flags
         echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T1.sb.flags ${ms} ${band};"
         echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T2.sb.flags ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py /opt/astro/utils/share/ryan_flags_sb.txt ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py /opt/astro/utils/share/sb_flags.txt ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py /home/sb/chan_flags_nov24.txt ${ms} ${band};"
-        echo -n "/home/sb/bin/flag_nov25.sh ${ms} < /home/sb/tflags.hiflux;"
-        echo -n "apply_sb_flags_single_band_ms2.py /home/sb/diff_flags.txt ${ms} ${band};"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/ryan_flags_sb.txt ${ms} ${band};"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/sb_flags.txt ${ms} ${band};"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/chan_flags_nov24.txt ${ms} ${band};"
+        echo -n "~/code/calim-pipeline-phase2/flag_nov25.sh ${ms} < ~/code/calim-pipeline-phase2/flagfiles/tflags.hiflux;"
+        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/diff_flags.txt ${ms} ${band};"
         for flagfile in ~/code/calim-pipeline-phase2/flagfiles/antflags/bad_*.ants; do
             echo -n "ms_flag_ants.sh ${ms} `cat $flagfile`;"
         done
