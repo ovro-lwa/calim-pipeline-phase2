@@ -5,6 +5,7 @@ Scripts for calibration and imaging for phase 2 OVRO-LWA
 
 1. Clone repo to astm
 2. Activate anaconda environment with python 2
-3. source env_pipeline.sh
-4. ./gen_caltables.sh > gen_caltables.txt
-5. source gen_caltables.txt
+3. source /opt/astro/env.sh
+4. source env_pipeline.sh
+5. ./gen_caltables.sh > gen_caltables.txt
+6. source gen_caltables.txt
