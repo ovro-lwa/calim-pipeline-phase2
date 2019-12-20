@@ -16,6 +16,8 @@ mkdir -p $workdir
 mkdir -p $outdir
 cp ~/code/calim-pipeline-phase2/gen_caltables.cfg $outdir
 
+~/code/calim-pipeline-phase2/gen_autos.sh ${dada_dir} ${dada} ${outdir}
+
 for band in ${spws}; do
     i=1
     ti=`printf "T%cal" ${i}`            # T1cal
@@ -81,6 +83,7 @@ for band in ${spws}; do
             echo -n "ms_flag_ants.sh ${ms} `cat $flagfile`;"
         done
     fi
+    echo -n "ms_flag_ants.sh ${ms} `cat ${outdir}/flag_bad_ants.ants`;"
 
     # flag with AOFlagger
     if $aoflag; then
