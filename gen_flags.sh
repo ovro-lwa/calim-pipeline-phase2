@@ -15,7 +15,7 @@ ms=${dada%.*}.ms
 mkdir -p $workdir
 mkdir -p $outdir
 
-cd $workdir
+cd $outdir
 bash ~/code/calim-pipeline-phase2/gen_autos.sh ${dada_dir} ${dada} ${outdir}
 
 # plot and write out pdf of autocorrelations
