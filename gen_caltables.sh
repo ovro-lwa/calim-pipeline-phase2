@@ -8,7 +8,7 @@ source ~/code/calim-pipeline-phase2/env_pipeline.sh
 source ~/code/calim-pipeline-phase2/gen_caltables.cfg
 
 # set up paths
-workdir="/lustre/pipeline/workdir"
+workdir="/lustre/pipeline/current/workdir"
 dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
 
 # set up dirs/files

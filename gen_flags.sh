@@ -7,7 +7,7 @@ source /opt/astro/env.sh
 source ~/code/calim-pipeline-phase2/env_pipeline.sh
 source ~/code/calim-pipeline-phase2/gen_caltables.cfg
 
-workdir="/lustre/pipeline/workdir"
+workdir="/lustre/pipeline/current/workdir"
 dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
 ms=${dada%.*}.ms
 
