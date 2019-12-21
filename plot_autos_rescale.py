@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import numpy as np
-import pylab
+#import pylab
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import pyrap.tables as pt
 import sys,os
 from matplotlib.backends.backend_pdf import PdfPages
@@ -16,10 +19,10 @@ t    = pt.table(sys.argv[1])
 tspw = pt.table(os.path.abspath(sys.argv[1])+'/SPECTRAL_WINDOW')
 # initialize figure and pdf file
 pdf  = PdfPages(sys.argv[1][:-4]+'_autos.pdf')
-pylab.figure(figsize=(15,10),edgecolor='Black')
-pylab.clf()
-ax1  = pylab.subplot(211)
-ax2  = pylab.subplot(212)
+plt.figure(figsize=(15,10),edgecolor='Black')
+plt.clf()
+ax1  = plt.subplot(211)
+ax2  = plt.subplot(212)
 ax1.set_color_cycle(['blue','green','red','cyan','magenta','brown','black','orange'])
 ax2.set_color_cycle(['blue','green','red','cyan','magenta','brown','black','orange'])
 legendstr = []
@@ -27,7 +30,6 @@ legendstr = []
 tautos = t.query('ANTENNA1=ANTENNA2')
 # iterate over antennas
 for antind,tant in enumerate(tautos.iter("ANTENNA1")):
-    print 'Plotting Ant %03d' % (antind+1)
     ampXallbands = np.zeros(22*109)
     ampYallbands = np.copy(ampXallbands)
     freqallbands = np.copy(ampXallbands)
@@ -62,7 +64,7 @@ for antind,tant in enumerate(tautos.iter("ANTENNA1")):
     ax2.plot(freqallbands/1.e6,10*np.log10(ampYallbands))
     # plot by ARX groupings
     if (np.mod(antind+1,8) == 0) and (antind != 0):
-        pylab.xlabel('Frequency [MHz]')
+        plt.xlabel('Frequency [MHz]')
         #ax1.set_xticks(np.arange(20,90,2),minor=True)
         ax1.set_xticks(np.arange(0,100,2),minor=True)
         #ax1.set_ylabel('Amp')
@@ -71,8 +73,8 @@ for antind,tant in enumerate(tautos.iter("ANTENNA1")):
         ax1.set_ylim([40,100])
         #ax2.set_xticks(np.arange(20,90,2),minor=True)
         ax2.set_xticks(np.arange(0,100,2),minor=True)
-        #pylab.ylabel('Amp')
-        pylab.ylabel('Power [dB]')
+        #plt.ylabel('Amp')
+        plt.ylabel('Power [dB]')
         ax2.set_title('Y',fontsize=18)
         ax2.set_ylim([40,100])
         ax1.legend(legendstr)
@@ -88,10 +90,10 @@ for antind,tant in enumerate(tautos.iter("ANTENNA1")):
             ax2.set_title('Y -- fiber antennas 239,240',fontsize=18)
         pdf.savefig()
         # reiniatilize for new set of plots
-        pylab.close()
-        pylab.figure(figsize=(15,10),edgecolor='Black')
-        ax1 = pylab.subplot(211)
-        ax2 = pylab.subplot(212)
+        plt.close()
+        plt.figure(figsize=(15,10),edgecolor='Black')
+        ax1 = plt.subplot(211)
+        ax2 = plt.subplot(212)
         ax1.set_color_cycle(['blue','green','red','cyan','magenta','brown','black','orange'])
         ax2.set_color_cycle(['blue','green','red','cyan','magenta','brown','black','orange'])
         legendstr = []

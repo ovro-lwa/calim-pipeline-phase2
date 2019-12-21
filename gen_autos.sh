@@ -29,18 +29,16 @@ cd ${workdir}
 if [ ! -e dada2ms.cfg ]; then ln -s /opt/astro/dada2ms/share/dada2ms/dada2ms.cfg.fiber dada2ms.cfg; fi
 
 dada2ms-tst3 ${datadir}/00/${dadafile} $ms
-echo 00
 
 for band in {01..21}; do
-	dada2ms-tst3 --append --addspw ${datadir}/${band}/${dadafile} $ms
-    echo ${band}
+    dada2ms-tst3 --append --addspw ${datadir}/${band}/${dadafile} $ms
 done
 
 # plot and write out pdf of autocorrelations
-plot_autos_rescale.py $ms
+#python ~/code/calim-pipeline-phase2/plot_autos_rescale.py $ms
 
 # run script to generate antenna flags
-flag_bad_ants.py $ms
+#python ~/code/calim-pipeline-phase2/flag_bad_ants.py $ms
 
 #for flagfile in /home/mmanders/antflags/bad_*.ants; do
 #	ms_flag_ants.sh ${ms} `cat $flagfile`
