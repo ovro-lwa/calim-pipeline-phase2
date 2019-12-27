@@ -7,16 +7,16 @@ source /opt/astro/env.sh
 source ~/code/calim-pipeline-phase2/env_pipeline.sh
 source ~/code/calim-pipeline-phase2/gen_caltables.cfg
 
+datestr=`date -u +'%y%m%d'`
+
 # set up paths
-workdir="/lustre/claw/workdir"
+workdir="/lustre/pipeline/${datestr}/workdir"
 dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
 
 # set up dirs/files
 mkdir -p $workdir
 mkdir -p $outdir
 cp ~/code/calim-pipeline-phase2/gen_caltables.cfg $outdir
-
-~/code/calim-pipeline-phase2/gen_autos.sh ${dada_dir} ${dada} ${outdir}
 
 for band in ${spws}; do
     i=1
@@ -176,3 +176,5 @@ for band in ${spws}; do
 	echo
 	i=$(($i + 1))
 done
+
+echo "ln -f -n -s ${outdir} /lustre/pipeline/current"
