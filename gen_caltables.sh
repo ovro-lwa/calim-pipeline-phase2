@@ -12,129 +12,87 @@ datestr=`date -u +'%y%m%d'`
 # set up paths
 workdir="/lustre/pipeline/${datestr}/workdir"
 dada=`~/code/calim-pipeline-phase2/get_BCALdada.py`
+if $multiint; then
+    dadafiles=`~/code/calim-pipeline-phase2/get_BCALdada_10minutes.py`
+fi
 
 # set up dirs/files
 mkdir -p $workdir
 mkdir -p $outdir
 cp ~/code/calim-pipeline-phase2/gen_caltables.cfg $outdir
 
+# generate antenna flags from autocorrelations
+#bash ~/code/calim-pipeline-phase2/gen_autos.sh ${dada_dir} ${dada} ${outdir} > /dev/null 2>&1
+
 for band in ${spws}; do
     i=1
-    ti=`printf "T%cal" ${i}`            # T1cal
-    basename=${band}-${ti}              # 00-T1cal
-    ms=${basename}.ms                   # 00-T1cal.ms
-    bcal=${basename}.bcal               # 00-T1cal.bcal
-    Df0=${basename}.Df0                 # 00-T1cal.bcal
-    bcalamps=/lustre/mmanders/bufferdata/sGRB/170112A/BCAL2/bandpass/${basename}-spec.bcal
-    #kcross=${basename}.kcross           # 00-T1cal.kcross
-    #xy0=${basename}.xy0amb              # 00-T1cal.xy0amb
-    #bcal=/lustre/mmanders/buffer_obs/20170112a/BCAL/bandpass/subband_modifiedcmplist/${basename}.bcal
-    #bcal=/lustre/mmanders/bufferdata/sGRB/170112A/BCAL/${basename}.bcal
-    #bcalamps=/lustre/mmanders/buffer_obs/20170112a/BCAL/bandpass/subband_modifiedcmplist/${basename}-spec.bcal
-    #bcalamps=/lustre/mmanders/bufferdata/sGRB/170112A/BCAL/${basename}-spec.bcal
-    tt=${basename}.tt                   # 00-T1cal.tt
-    work_subdir=${workdir}/${basename}  # /lustre/mmanders/gen_caltables/00-T1cal
+    ti=`printf "T%cal" ${i}`            # T1al
+    basename=${band}-${ti}              # 00-T1al
+    ms=${basename}.ms                   # 00-T1al.ms
+    bcal=${basename}.bcal               # 00-T1al.bcal
+    dcal=${basename}.dcal               # 00-T1al.dcal
+    Xcal=${basename}.X                  # 00-T1al.X
+    tt=${basename}.tt                   # 00-T1al.tt
+    work_subdir=${workdir}/${basename}  # /lustre/pipeline/${datestr}/workdir/00-T1al
 
     # run dada2ms
     echo -n "mkdir -p $work_subdir;"
     echo -n "cd $work_subdir;"
     echo -n "ln -s /opt/astro/dada2ms/share/dada2ms/dada2ms.cfg.fiber dada2ms.cfg;"
     echo -n "ln -s ~/code/calim-pipeline-phase2/sources_resolved.json sources.json;"
-    if [ -s $removerfi ]; then
-        echo -n "ln -s ${removerfi} sources_rfi.json;"
-    fi
     echo -n "dada2ms-tst3 ${dada_dir}/${band}/${dada} ${ms};"
-    #echo -n "chgcentre ${ms} `cat ra_dec.txt`; "
-
-    # Swap lines
-    if $do_pol_swap; then
-        echo -n "swap_polarizations_from_delay_bug ${ms};"
+    if $multiint; then
+        echo -n "echo vis=[] > concat.py;"
+	echo -n "phasecenter=\`~/code/calim-pipeline-phase2/ms_zenith.py ${ms}\`;"
+        for dadafile in ${dadafiles}; do
+            echo -n "dada2ms-tst3 ${dada_dir}/${band}/${dadafile} ${dadafile%.*}.ms;"
+	    echo -n "chgcentre ${dadafile%.*}.ms ${phasecenter};"
+            echo -n "echo vis.append\\\\\(\"\\\\\"${dadafile%.*}.ms\"\\\\\"\\\\\) >> concat.py;"
+        done
+        echo -n "rm -r ${ms};"
+        echo -n "echo concatvis=\"\\\\\"${ms}\"\\\\\" >> concat.py;"
+        echo -n "echo \"concat(vis, concatvis=concatvis)\" >> concat.py;"
+        echo -n "casapy --nogui --nologger --log2term -c concat.py;"
     fi
-
-    # Swap lines
-    if $exp_line_swap; then
-        echo -n "/home/mmanders/scripts/swap_polarizations_expansion_201708/swap_polarizations_expansion ${ms};"
-    fi
-
-    # Antenna line swap
-    #echo -n "/home/mmanders/scripts/antenna_line_swap.py ${ms};"
 
     # apply flags to MS
-    if [ ! -z $antflag_dir ]; then
-## **PYTHON BINARY ISSUE?
-#        echo -n "~/code/calim-pipeline-phase2/apply_chanspecific_ant_flags.py ~/code/calim-pipeline-phase2/flagfiles/baseline/antFreqFlags.npy ${ms} ${band};"
-#        echo -n "~/code/calim-pipeline-phase2/apply_chanspecific_ant_flags.py ~/code/calim-pipeline-phase2/flagfiles/baseline/antFreqFlagsAbs.npy ${ms} ${band};"
-## **PYTHON BINARY ISSUE?
-        # antenna flags
-        echo -n "ms_flag_ants.sh ${ms} `cat ${antflag_dir}/all.antflags`;"
-        # baseline flags
-        echo -n "/home/sb/bin/flag_nov25.sh ${ms} < ${antflag_dir}/all.blflags;"
-        # channel flags
-        echo -n "apply_sb_flags_single_band_ms2.py ${antflag_dir}/all.chanflags ${ms} ${band};"
-    else # use the old 3-day run September flags
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T1.sb.flags ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/T2.sb.flags ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/ryan_flags_sb.txt ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/sb_flags.txt ${ms} ${band};"
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/chanflags/chan_flags_nov24.txt ${ms} ${band};"
-        echo -n "~/code/calim-pipeline-phase2/flag_nov25.sh ${ms} < ~/code/calim-pipeline-phase2/flagfiles/tflags.hiflux;"
-        echo -n "apply_sb_flags_single_band_ms2.py ~/code/calim-pipeline-phase2/flagfiles/diff_flags.txt ${ms} ${band};"
-        for flagfile in ~/code/calim-pipeline-phase2/flagfiles/antflags/bad_*.ants; do
-            echo -n "ms_flag_ants.sh ${ms} `cat $flagfile`;"
-        done
-    fi
+    # antenna flags
+    #echo -n "ms_flag_ants.sh ${ms} `cat ${antflag_dir}/all.antflags`;"
     echo -n "ms_flag_ants.sh ${ms} `cat ${outdir}/flag_bad_ants.ants`;"
+    # baseline flags
+    echo -n "/home/sb/bin/flag_nov25.sh ${ms} < ${antflag_dir}/all.blflags;"
+    # channel flags
+    #echo -n "apply_sb_flags_single_band_ms2.py ${antflag_dir}/all.chanflags ${ms} ${band};"
 
-    # flag with AOFlagger
-    if $aoflag; then
-        echo -n "aoflagger ${ms};"
-    fi
-
-    # Frequency shift
-    if $do_frq_offset; then
-        echo -n "freq-offset_fix.py ${ms};"
-    fi
-
-    if $usettcal; then
-    	echo -n "echo vis=\\\"\"${ms}\"\\\" > ccal.py;"
-        echo -n "echo \"flagdata(vis, uvrange='<3lambda', flagbackup=False)\" >> ccal.py;"
-    	echo -n "casapy --nogui --nologger --log2term -c ccal.py;"
-        
-        echo -n "~/scripts/gen_sourcesjson.py ${ms} >> sources_${band}.json;"
-        echo -n "cp sources_${band}.json ${outdir};"
-        echo -n "ttcal-0.3.0 gaincal ${ms} ${tt} sources_${band}.json --beam constant --minuvw 10 --maxiter 30 --tolerance 1e-4;"
-        echo -n "ttcal-0.3.0 applycal ${ms} ${tt} --corrected;"
+    # calibration steps
+    # define variable names
+    echo -n "echo vis=\\\"\"${ms}\"\\\" > ccal.py;"
+    echo -n "echo bcal=\\\"\"${bcal}\"\\\" >> ccal.py;"
+    echo -n "echo dcal=\\\"\"${dcal}\"\\\" >> ccal.py;"
+    echo -n "echo Xcal=\\\"\"${Xcal}\"\\\" >> ccal.py;"
+    echo -n "echo cmplst=\\\"\"${basename}.cl\"\\\" >> ccal.py;"
+    # generate model component list and visibilities
+    if $stokes_cal; then
+        echo -n "gen_model_ms_stokes.py ${ms} >> ccal.py;"
     else
-    	echo -n "echo vis=\\\"\"${ms}\"\\\" > ccal.py;"
-    	echo -n "echo bcal=\\\"\"${bcal}\"\\\" >> ccal.py;"
-    	echo -n "echo bcalamps=\\\"\"${bcalamps}\"\\\" >> ccal.py;"
-        echo -n "echo Df0=\\\"\"${Df0}\"\\\" >> ccal.py;"
-    	echo -n "echo cmplst=\\\"\"${basename}.cl\"\\\" >> ccal.py;"
-        if $stokes_cal; then
-            echo -n "gen_model_ms_stokes.py ${ms} >> ccal.py;"
-        else
-            echo -n "gen_model_ms.py ${ms} >> ccal.py;"
-        fi
-        echo -n "echo \"flagdata(vis, uvrange='<3lambda', flagbackup=False)\" >> ccal.py;"
-    	echo -n "echo \"clearcal(vis, addmodel=True)\" >> ccal.py;"
-    	echo -n "echo \"ft(vis, complist=cmplst, usescratch=True)\" >> ccal.py;"
-    	echo -n "echo \"bandpass(vis, bcal, refant='34', uvrange='>15lambda', fillgaps=1)\" >> ccal.py;"
-        if $stokes_cal; then
-            echo -n "echo \"polcal(vis, Df0, poltype='Dflls', gaintable=[bcal], refant='')\" >> ccal.py;"
-            #echo -n "echo \"polcal(vis, Df0, poltype='Dflls', gaintable=[bcal,bcalamps], refant='')\" >> ccal.py;"
-            echo -n "echo \"applycal(vis, gaintable=[bcal,Df0], calwt=[T,F], flagbackup=False)\" >> ccal.py;"
-        else
-            echo -n "echo \"applycal(vis, gaintable=[bcal], flagbackup=False)\" >> ccal.py;"
-            #echo -n "echo \"applycal(vis, gaintable=[bcal,bcalamps], flagbackup=False)\" >> ccal.py;"
-        fi
-    	echo -n "casapy --nogui --nologger --log2term -c ccal.py;"
-    
-    	# Clean up after Casa (casaviewer.wrapped-svr process still around)
-    	#echo -n "for pid in \`pgrep -P \$\$\`;do"
-    	#echo -n "	kill -9 \${pid};"
-    	#echo -n "done;"
+        echo -n "gen_model_ms.py ${ms} >> ccal.py;"
     fi
+    echo -n "echo \"flagdata(vis, uvrange='<3lambda', flagbackup=False)\" >> ccal.py;"
+    echo -n "echo \"clearcal(vis, addmodel=True)\" >> ccal.py;"
+    echo -n "echo \"ft(vis, complist=cmplst, usescratch=True)\" >> ccal.py;"
+    # find calibration solutions and apply
+    echo -n "echo \"bandpass(vis, bcal, refant='34', uvrange='>15lambda', combine='scan,field,obs', fillgaps=1)\" >> ccal.py;"
+    if $stokes_cal; then
+        echo -n "echo \"polcal(vis, Xcal, poltype='Xf', gaintable=[bcal], refant='', combine='scan,field,obs')\" >> ccal.py;"
+        echo -n "echo \"polcal(vis, dcal, poltype='Dflls', gaintable=[bcal,Xcal], refant='', combine='scan,field,obs')\" >> ccal.py;"
+        echo -n "echo \"applycal(vis, gaintable=[bcal,Xcal,dcal], flagbackup=False)\" >> ccal.py;"
+    else
+        echo -n "echo \"applycal(vis, gaintable=[bcal], flagbackup=False)\" >> ccal.py;"
+    fi
+    echo -n "casapy --nogui --nologger --log2term -c ccal.py;"
 
+ 
+    # peeling
     if $peel; then
         echo -n "ttcal-0.2.0 peel --input ${ms} --sources sources.json --beam sine --minuvw 10 --maxiter 30 --tolerance 1e-4;"
     elif $zest; then
@@ -147,34 +105,25 @@ for band in ${spws}; do
     elif $prune; then
         echo -n "ttcal-0.3.0 prune ${ms} /lustre/mmanders/4dayrun/4hours/sources_rfi.json --beam constant --minuvw 2 --maxiter 30 --tolerance 1e-4;"
     fi
-    if [ -s $removerfi ]; then
-        echo -n "ttcal-0.2.0 shave --input ${ms} --sources sources_rfi.json --beam constant --minuvw 10 --maxiter 30 --tolerance 1e-4;"
-    fi
     if $bandpass; then
         echo -n "JULIA_PKGDIR=/opt/astro/mwe/ttcal-0.3.0/julia-packages/ julia-0.4.6 /home/mmanders/scripts/peel_restore.jl \"${ms}\";"
     fi
 
+    # Automated channel flagging
     echo -n "~/code/calim-pipeline-phase2/flag_bad_chans.20180206.py ${ms} ${band};" 
 
-    if $zest; then
-        echo -n "wsclean -tempdir /dev/shm/mmanders -pol I,V -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
-        #echo -n "wsclean -tempdir /dev/shm/mmanders -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
+    # Imaging
+    if $stokes_cal; then
+        echo -n "wsclean -pol I,V -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
     else
-        #echo -n "wsclean -channelsout 109 -tempdir /dev/shm/mmanders -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
-        if $stokes_cal; then
-            echo -n "wsclean -tempdir /dev/shm/mmanders -pol I,V -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
-        else
-            echo -n "wsclean -tempdir /dev/shm/mmanders -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
-        fi
+        echo -n "wsclean -size 4096 4096 -scale 0.03125 -weight briggs 0 -name ${basename} ${ms};"
     fi
 
-    echo -n "rm -rf ${outdir}/${ms};"
-    echo -n "rm -rf ${outdir}/${bcal};"
-    echo -n "rm -rf ${outdir}/${basename}*-dirty.fits;"
-	echo -n "cp -r ${ms} ${bcal} ${basename}*-dirty.fits ${outdir};"
-	echo -n "rm -rf $work_subdir;"
-	echo
-	i=$(($i + 1))
+    # Move pipeline output files to final resting place
+    echo -n "cp -r ${ms} ${bcal} ${dcal} ${Xcal} ${basename}*-dirty.fits ${outdir};"
+    echo -n "rm -rf $work_subdir;"
+    echo
+    i=$(($i + 1))
 done
 
 echo "ln -f -n -s ${outdir} /lustre/pipeline/current"
