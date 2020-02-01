@@ -35,6 +35,9 @@ for band in ${spws}; do
     tt=${basename}.tt                   # 00-T1al.tt
     work_subdir=${workdir}/${basename}  # /lustre/pipeline/${datestr}/workdir/00-T1al
 
+    # set up environment in each line of gen_caltables.txt
+    echo -n "source /opt/astro/env.sh;"
+    echo -n "source ~/code/calim-pipeline-phase2/env_pipeline.sh;"
     # run dada2ms
     echo -n "mkdir -p $work_subdir;"
     echo -n "cd $work_subdir;"
@@ -47,20 +50,19 @@ for band in ${spws}; do
         for dadafile in ${dadafiles}; do
             echo -n "dada2ms-tst3 ${dada_dir}/${band}/${dadafile} ${dadafile%.*}.ms;"
 	    echo -n "chgcentre ${dadafile%.*}.ms ${phasecenter};"
-            echo -n "echo vis.append\\\\\(\"\\\\\"${dadafile%.*}.ms\"\\\\\"\\\\\) >> concat.py;"
+            echo -n "echo vis.append\\(\"\\\"${dadafile%.*}.ms\"\\\"\\) >> concat.py;"
         done
         echo -n "rm -r ${ms};"
-        echo -n "echo concatvis=\"\\\\\"${ms}\"\\\\\" >> concat.py;"
+        echo -n "echo concatvis=\\\"\"${ms}\"\\\" >> concat.py;"
         echo -n "echo \"concat(vis, concatvis=concatvis)\" >> concat.py;"
         echo -n "casapy --nogui --nologger --log2term -c concat.py;"
     fi
 
     # apply flags to MS
     # antenna flags
-    #echo -n "ms_flag_ants.sh ${ms} `cat ${antflag_dir}/all.antflags`;"
     echo -n "ms_flag_ants.sh ${ms} `cat ${outdir}/flag_bad_ants.ants`;"
     # baseline flags
-    echo -n "/home/sb/bin/flag_nov25.sh ${ms} < ${antflag_dir}/all.blflags;"
+    echo -n "/home/sb/bin/flag_nov25.sh ${ms} < ${antflag_dir}/flagsRyan_adjacent.bl;"
     # channel flags
     #echo -n "apply_sb_flags_single_band_ms2.py ${antflag_dir}/all.chanflags ${ms} ${band};"
 
